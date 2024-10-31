@@ -1,0 +1,7 @@
+task3/KITTI_2015_subset.zip
+task3/KITTI_2015_subset/
+task3/examples
+report-latex/
+! report-latex/*.tex
+task3/.DS_Store
+.DS_Store
