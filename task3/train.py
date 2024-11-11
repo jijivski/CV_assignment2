@@ -1,13 +1,14 @@
 import os
 import os.path as osp
-
+import tqdm
 import numpy as np
 import torch
+import time
 from dataset import KITTIDataset, PatchProvider
 from siamese_neural_network import StereoMatchingNetwork, calculate_similarity_score
 
 
-def hinge_loss(score_pos, score_neg, label):
+def hinge_loss(score_pos, score_neg, label, margin=0.2):
     """
     Computes the hinge loss for the similarity of a positive and a negative example.
 
@@ -20,6 +21,23 @@ def hinge_loss(score_pos, score_neg, label):
         avg_loss (torch.Tensor): the mean loss over the patch and the mini batch
         acc (torch.Tensor): the accuracy of the prediction
     """
+
+    '''
+    The network is trained by minimizing a hinge loss. The loss is computed by considering
+pairs of examples centered around the same image position where one example belongs to
+the positive and one to the negative class. Let s+ be the output of the network for the
+positive example, s− be the output of the network for the negative example, and let m, the
+margin, be a positive real number. The hinge loss for that pair of examples is defined as
+max(0, m + s− − s+). The loss is zero when the similarity of the positive example is greater
+than the similarity of the negative example by at least the margin m. We set the margin
+to 0.2 in our experiments.'''
+    loss = torch.clamp(margin + score_neg - score_pos, min=0)
+    avg_loss = loss.mean()
+    # acc = (loss <= 0).float().mean() #TODO
+    acc = (score_pos > score_neg).float().sum() / len(score_pos)
+    return avg_loss, acc
+
+
 
     #######################################
     # -------------------------------------
@@ -51,6 +69,40 @@ def training_loop(
     # -------------------------------------
     # TODO: ENTER CODE HERE (EXERCISE 6)
     # -------------------------------------
+    time_str = time.strftime("%Y%m%d-%H%M%S")
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # infer_similarity_metric.to(device)
+    print(f"Device: {device}")
+    # breakpoint()
+
+    for i in tqdm.tqdm(range(iterations)):
+        # left_patches, right_patches, labels = patches.iterate_batches(batch_size)
+        ref_batch, pos_batch, neg_batch = next(patches.iterate_batches(batch_size))
+        
+        # breakpoint()
+        # device = infer_similarity_metric.device
+        ref_batch = ref_batch.to(device)
+        pos_batch = pos_batch.to(device)
+        neg_batch = neg_batch.to(device)
+        # breakpoint()
+        # pos_batch.shape
+        # [128, 9, 9, 1]
+        # want it to be BCHW, it is now BHWC
+        ref_batch = ref_batch.permute(0, 3, 1, 2)
+        pos_batch = pos_batch.permute(0, 3, 1, 2)
+        neg_batch = neg_batch.permute(0, 3, 1, 2)
+
+
+        optimizer.zero_grad()
+        similarity_pos = calculate_similarity_score(infer_similarity_metric, ref_batch, pos_batch)
+        similarity_neg = calculate_similarity_score(infer_similarity_metric, ref_batch, neg_batch)
+        loss, acc = hinge_loss(similarity_pos, similarity_neg, label=None)# fill 
+        loss.backward()
+        optimizer.step()
+        if i % 100 == 0:
+            print(f'Iteration {i}, Loss: {loss.item()}, Accuracy: {acc.item()}')
+            with open(osp.join(out_dir, f"{time_str}_train_losses.txt"), "a") as f:
+                f.write(f"{i} {loss.item()} {acc.item()}\n")
 
 
 def main():
@@ -81,8 +133,10 @@ def main():
     # Load patch provider
     patches = PatchProvider(dataset, patch_size=(patch_size, patch_size))
 
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(f"Device: {device}")  
     # Initialize the network
-    infer_similarity_metric = StereoMatchingNetwork()
+    infer_similarity_metric = StereoMatchingNetwork().to(device)
     # Set to train
     infer_similarity_metric.train()
     # uncomment if you don't have a gpu
@@ -104,3 +158,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

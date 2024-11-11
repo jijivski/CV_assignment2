@@ -5,3 +5,8 @@ report-latex/
 ! report-latex/*.tex
 task3/.DS_Store
 .DS_Store
+__MACOSX/KITTI_2015_subset/
+KITTI_2015_subset.zip
+__MACOSX/._KITTI_2015_subset
+task3/output/
+*.pyc

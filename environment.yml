@@ -13,3 +13,8 @@ dependencies:
   - scikit-image=0.18.1
   - pip:
     - opencv-python==4.6.0.66
+# ERROR: pip's dependency resolver does not currently take into account all the packages that are installed. This behaviour is the source of the following dependency conflicts.
+# contourpy 1.3.0 requires numpy>=1.23, but you have numpy 1.21.2 which is incompatible.
+# matplotlib 3.9.2 requires numpy>=1.23, but you have numpy 1.21.2 which is incompatible.
+# pywavelets 1.6.0 requires numpy<3,>=1.22.4, but you have numpy 1.21.2 which is incompatible.
+# scipy 1.13.1 requires numpy<2.3,>=1.22.4, but you have numpy 1.21.2 which is incompatible.

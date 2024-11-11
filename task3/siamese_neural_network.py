@@ -27,6 +27,14 @@ class StereoMatchingNetwork(torch.nn.Module):
 
         super().__init__()
         gpu = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+        self.conv1 = torch.nn.Conv2d(1, 64, kernel_size=3)
+        self.relu1 = torch.nn.ReLU()
+        self.conv2 = torch.nn.Conv2d(64, 64, kernel_size=3)
+        self.relu2 = torch.nn.ReLU()
+        self.conv3 = torch.nn.Conv2d(64, 64, kernel_size=3)
+        self.relu3 = torch.nn.ReLU()
+        self.conv4 = torch.nn.Conv2d(64, 64, kernel_size=3)
+        self.normalize = torch.nn.functional.normalize
 
         #######################################
         # -------------------------------------
@@ -44,7 +52,12 @@ class StereoMatchingNetwork(torch.nn.Module):
             features (torch.Tensor): predicted normalized features of the input image patch X,
                                shape (batch_size, height - 8, width - 8, n_features)
         """
-
+        X = self.relu1(self.conv1(X))
+        X = self.relu2(self.conv2(X))
+        X = self.relu3(self.conv3(X))
+        X = self.relu3(self.conv4(X))
+        X = self.normalize(X, p=2, dim=1)
+        return X
         #######################################
         # -------------------------------------
         # TODO: ENTER CODE HERE (EXERCISE 5)
@@ -64,7 +77,30 @@ def calculate_similarity_score(infer_similarity_metric, Xl, Xr):
         score (torch.Tensor): the similarity score of both image patches which is the dot product of their features
     """
 
+
+    # breakpoint()
+    # [128, 1, 9, 9]
+
+    features_left = infer_similarity_metric(Xl)
+    features_right = infer_similarity_metric(Xr)
+    # torch.Size([128, 64, 1, 1])
+
+    return torch.sum(features_left * features_right, dim=1).squeeze()
     #######################################
     # -------------------------------------
     # TODO: ENTER CODE HERE (EXERCISE 5)
     # -------------------------------------
+
+if __name__ == '__main__':
+    # Test the network
+    network = StereoMatchingNetwork()
+    X = torch.randn(2, 1, 9, 9)
+    features = network(X)
+    assert features.shape[:3] == (2, 1, 1), f"Expected shape (b, 1, 1, x), got {features.shape}"
+    print("Network test successful")
+    # Test the similarity score
+    Xl = torch.randn(1, 1, 9, 9)
+    Xr = torch.randn(1, 1, 9, 9)
+    score = calculate_similarity_score(network, Xl, Xr)
+    assert score.shape == (1,), f"Expected shape (1,), got {score.shape}"
+    print("Similarity score test successful")

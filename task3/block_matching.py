@@ -52,6 +52,19 @@ def sad(image_left, image_right, window_size=3, max_disparity=50):
     height = image_left.shape[0]
     width = image_left.shape[1]
 
+    for x in range(padding, padding + width - window_size + 1):
+        for y in range(padding, padding + height - window_size + 1):
+            min_sad = float('inf')
+            best_d = 0
+            window_left = image_left[y - padding:y + padding + window_size, x - padding:x + padding + window_size]
+            for d in range(max_disparity + 1):
+                window_right = image_right[y - padding:y + padding + window_size, x - padding + d:x + padding + window_size + d]
+                sad_value = np.sum(np.abs(window_left - window_right))
+                if sad_value < min_sad:
+                    min_sad = sad_value
+                    best_d = d
+            D[y - padding:y + padding + window_size, x - padding:x + padding + window_size] = best_d
+
     #######################################
     # -------------------------------------
     # TODO: ENTER CODE HERE (EXERCISE 1)
@@ -74,6 +87,28 @@ def visualize_disparity(
         title: plot title
         max_disparity: maximum disparity
     """
+    plt.figure(figsize=(12, 6))
+    
+    plt.subplot(1, 3, 1)
+    plt.imshow(im_left, cmap='gray')
+    plt.title('Left Image')
+    plt.axis('off')
+
+    plt.subplot(1, 3, 2)
+    plt.imshow(im_right, cmap='gray')
+    plt.title('Right Image')
+    plt.axis('off')
+
+    plt.subplot(1, 3, 3)
+    # Normalize the disparity map to [0, 1] range and apply a colormap
+    normalized_disparity = (disparity / max_disparity).astype(np.float32)
+    plt.imshow(normalized_disparity, cmap='jet')
+    plt.colorbar(label='Disparity')
+    plt.title(title)
+    plt.axis('off')
+
+    plt.savefig(out_file_path)
+    plt.close()
 
     #######################################
     # -------------------------------------
