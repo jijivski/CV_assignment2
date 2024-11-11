@@ -37,8 +37,6 @@ to 0.2 in our experiments.'''
     acc = (score_pos > score_neg).float().sum() / len(score_pos)
     return avg_loss, acc
 
-
-
     #######################################
     # -------------------------------------
     # TODO: ENTER CODE HERE (EXERCISE 6)
@@ -64,7 +62,6 @@ def training_loop(
         iterations (int): number of iterations to perform
         batch_size (int): batch size
     """
-
     #######################################
     # -------------------------------------
     # TODO: ENTER CODE HERE (EXERCISE 6)
@@ -99,10 +96,14 @@ def training_loop(
         loss, acc = hinge_loss(similarity_pos, similarity_neg, label=None)# fill 
         loss.backward()
         optimizer.step()
-        if i % 100 == 0:
+        if i % 50 == 0:
             print(f'Iteration {i}, Loss: {loss.item()}, Accuracy: {acc.item()}')
             with open(osp.join(out_dir, f"{time_str}_train_losses.txt"), "a") as f:
                 f.write(f"{i} {loss.item()} {acc.item()}\n")
+            # save model here
+            torch.save(infer_similarity_metric.state_dict(), osp.join(out_dir, f"trained_model_{i}.pth"))
+
+
 
 
 def main():
@@ -112,7 +113,7 @@ def main():
 
     # Hyperparameters
     training_iterations = 1000
-    batch_size = 128
+    batch_size = 4
     learning_rate = 3e-4
     patch_size = 9
     padding = patch_size // 2
@@ -136,9 +137,13 @@ def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Device: {device}")  
     # Initialize the network
-    infer_similarity_metric = StereoMatchingNetwork().to(device)
+    infer_similarity_metric = StereoMatchingNetwork()
     # Set to train
     infer_similarity_metric.train()
+    infer_similarity_metric.to(device)
+    # print(next(infer_similarity_metric.parameters()).device)
+    # for param in infer_similarity_metric.parameters():print(param.device)
+
     # uncomment if you don't have a gpu
     # infer_similarity_metric.to('cpu')
     optimizer = torch.optim.SGD(
