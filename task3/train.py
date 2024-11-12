@@ -1,3 +1,4 @@
+from torch.utils.data import Dataset, DataLoader
 import os
 import os.path as osp
 import tqdm
@@ -76,34 +77,34 @@ def training_loop(
 
     for i in tqdm.tqdm(range(iterations)):
         # left_patches, right_patches, labels = patches.iterate_batches(batch_size)
-        ref_batch, pos_batch, neg_batch = next(patches.iterate_batches(batch_size))
-        
-        # breakpoint()
-        # device = infer_similarity_metric.device
-        ref_batch = ref_batch.to(device)
-        pos_batch = pos_batch.to(device)
-        neg_batch = neg_batch.to(device)
-        # breakpoint()
-        # pos_batch.shape
-        # [128, 9, 9, 1]
-        # want it to be BCHW, it is now BHWC
-        ref_batch = ref_batch.permute(0, 3, 1, 2)
-        pos_batch = pos_batch.permute(0, 3, 1, 2)
-        neg_batch = neg_batch.permute(0, 3, 1, 2)
+        # ref_batch, pos_batch, neg_batch = next(patches.iterate_batches(batch_size))
+        for ref_batch, pos_batch, neg_batch in patches:
+            # breakpoint()
+            # device = infer_similarity_metric.device
+            ref_batch = ref_batch.to(device)
+            pos_batch = pos_batch.to(device)
+            neg_batch = neg_batch.to(device)
+            # breakpoint()
+            # pos_batch.shape
+            # [128, 9, 9, 1]
+            # want it to be BCHW, it is now BHWC
+            ref_batch = ref_batch.permute(0, 3, 1, 2)
+            pos_batch = pos_batch.permute(0, 3, 1, 2)
+            neg_batch = neg_batch.permute(0, 3, 1, 2)
 
 
-        optimizer.zero_grad()
-        similarity_pos = calculate_similarity_score(infer_similarity_metric, ref_batch, pos_batch)
-        similarity_neg = calculate_similarity_score(infer_similarity_metric, ref_batch, neg_batch)
-        loss, acc = hinge_loss(similarity_pos, similarity_neg, label=None)# fill 
-        loss.backward()
-        optimizer.step()
-        if i % 50 == 0:
-            print(f'Iteration {i}, Loss: {loss.item()}, Accuracy: {acc.item()}')
-            with open(osp.join(out_dir, f"{time_str}_train_losses.txt"), "a") as f:
-                f.write(f"{i} {loss.item()} {acc.item()}\n")
-            # save model here
-            torch.save(infer_similarity_metric.state_dict(), osp.join(out_dir, f"trained_model_{i}.pth"))
+            optimizer.zero_grad()
+            similarity_pos = calculate_similarity_score(infer_similarity_metric, ref_batch, pos_batch)
+            similarity_neg = calculate_similarity_score(infer_similarity_metric, ref_batch, neg_batch)
+            loss, acc = hinge_loss(similarity_pos, similarity_neg, label=None)# fill 
+            loss.backward()
+            optimizer.step()
+            if i % 50 == 0:
+                print(f'Iteration {i}, Loss: {loss.item()}, Accuracy: {acc.item()}')
+                with open(osp.join(out_dir, f"{time_str}_train_losses.txt"), "a") as f:
+                    f.write(f"{i} {loss.item()} {acc.item()}\n")
+                # save model here
+                torch.save(infer_similarity_metric.state_dict(), osp.join(out_dir, f"trained_model_{i}.pth"))
 
 
 
@@ -116,7 +117,8 @@ def main():
     # Hyperparameters
     training_iterations = 1000
     batch_size = 4
-    learning_rate = 3e-4
+    # learning_rate = 3e-4
+    learning_rate = 1e-3
     patch_size = 9
     padding = patch_size // 2
     max_disparity = 50
@@ -124,7 +126,7 @@ def main():
     # Shortcuts for directories
     root_dir = osp.dirname(osp.abspath(__file__))
     data_dir = osp.join(root_dir, "KITTI_2015_subset")
-    out_dir = osp.join(root_dir, "output/siamese_network")
+    out_dir = osp.join(root_dir, "output/siamese_network_lr_0001")
     if not osp.exists(out_dir):
         os.makedirs(out_dir)
 
@@ -135,7 +137,17 @@ def main():
     )
     # Load patch provider
     # patches = PatchProvider(dataset, patch_size=(patch_size, patch_size))
+    # patches = PatchProvider(dataset, patch_size=(patch_size, patch_size))
+    patch_dataset = PatchDataset(dataset)
 
+    # 创建数据加载器
+    train_loader = DataLoader(
+        patch_dataset, 
+        batch_size=128,      # 每个批次32个样本
+        shuffle=True,       # 随机打乱数据
+        num_workers=12,     # 12个子进程加载数据# for debugging
+        pin_memory=True     # 加速GPU训练
+    )
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Device: {device}")  
@@ -156,7 +168,7 @@ def main():
     # Start training loop
     training_loop(
         infer_similarity_metric,
-        patches,
+        train_loader,
         optimizer,
         out_dir,
         iterations=training_iterations,
@@ -167,3 +179,9 @@ def main():
 if __name__ == "__main__":
     main()
 
+'''
+cd /root/autodl-tmp/MKSC-20-0237-codes-data/data/amazon/CV_assignment2/task3/
+CUDA_VISIBLE_DEVICES="" python train.py
+
+python train.py
+'''

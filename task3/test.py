@@ -21,6 +21,41 @@ def compute_disparity_CNN(infer_similarity_metric, img_l, img_r, max_disparity=5
     Returns:
         D: tensor holding the disparity
     """
+    # Get image dimensions
+    height, width = img_l.shape[0], img_l.shape[1]
+    
+    # Initialize disparity map
+    D = torch.zeros((height, width))
+    
+    # Iterate through each pixel
+    for y in range(height):
+        for x in range(width):
+            best_similarity = float('-inf')
+            best_disparity = 0
+            
+            # Search for best matching disparity
+            for d in range(max_disparity + 1):
+                # Ensure we don't go out of image bounds
+                if x - d < 0:
+                    continue
+                
+                # Extract patches from left and right images
+                left_patch = img_l[y:y+1, x:x+1]
+                right_patch = img_r[y:y+1, x-d:x-d+1]
+                
+                # Compute similarity using the trained network
+                with torch.no_grad():
+                    similarity = calculate_similarity_score(infer_similarity_metric, left_patch, right_patch)
+                
+                # Update best disparity
+                if similarity > best_similarity:
+                    best_similarity = similarity
+                    best_disparity = d
+            
+            # Store best disparity
+            D[y, x] = best_disparity
+    
+    return D
 
     #######################################
     # -------------------------------------
@@ -30,7 +65,7 @@ def compute_disparity_CNN(infer_similarity_metric, img_l, img_r, max_disparity=5
 
 def main():
     # Hyperparameters
-    training_iterations = 1000
+    training_iterations = 250
     batch_size = 128
     learning_rate = 3e-4
     patch_size = 9
@@ -90,3 +125,9 @@ def main():
 
 if __name__ == "__main__":
     main()
+'''
+cd /root/autodl-tmp/MKSC-20-0237-codes-data/data/amazon/CV_assignment2/task3/
+CUDA_VISIBLE_DEVICES="" python test.py
+
+python train.py
+'''

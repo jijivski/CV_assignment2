@@ -1,6 +1,6 @@
 import os
 import os.path as osp
-
+import torch
 import numpy as np
 from dataset import KITTIDataset
 from matplotlib import pyplot as plt
@@ -16,6 +16,9 @@ def add_padding(I, padding):
     Returns:
         P (np.ndarray): (H+2*padding)x(W+2*padding)x? numpy array containing zero padded image
     """
+    if isinstance(I, torch.Tensor):
+        I = I.detach().cpu().numpy()  # Convert to NumPy array
+        
     if len(I.shape) == 2:
         H, W = I.shape
         padded = np.zeros((H + 2 * padding, W + 2 * padding), dtype=np.float32)

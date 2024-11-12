@@ -8,7 +8,7 @@ import numpy as np
 import torch
 from imageio import imread
 from skimage.transform import rescale
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset, DataLoader    
 
 
 # convert rgb image to grayscale
@@ -249,8 +249,11 @@ class KITTIDataset(Dataset):
             )
 
         # 转换为 PyTorch 张量
-        img_l = torch.from_numpy(img_l).permute(2, 0, 1).float()
-        img_r = torch.from_numpy(img_r).permute(2, 0, 1).float()
+        # img_l = torch.from_numpy(img_l).permute(2, 0, 1).float()
+        # img_r = torch.from_numpy(img_r).permute(2, 0, 1).float()
+        
+        img_l = torch.from_numpy(img_l).float()
+        img_r = torch.from_numpy(img_r).float()
 
         if self.disparity_dir is not None:
             disp = imread(self._disp_images[i]).astype(np.float32) / 256.0
@@ -270,7 +273,7 @@ class KITTIDataset(Dataset):
 
 
 class PatchDataset(Dataset):
-    def __init__(self, data, patch_size=(7, 7), N=(4, 10), P=1):
+    def __init__(self, data, patch_size=(9, 9), N=(4, 10), P=1):
         self._data = data
         self._patch_size = patch_size
         self._N = N
@@ -312,6 +315,7 @@ class PatchDataset(Dataset):
         patch_size = self._patch_size
         half_patch = np.array(patch_size) // 2
         img_l, img_r, disp = self._data[int(np.random.rand() * len(self._data))]
+        # breakpoint()
         H, W = img_l.shape[:2]
         while True:
             half_p = patch_size[0] // 2
@@ -369,7 +373,7 @@ if __name__ == '__main__':
         patch_dataset, 
         batch_size=32,      # 每个批次32个样本
         shuffle=True,       # 随机打乱数据
-        num_workers=12,     # 12个子进程加载数据
+        num_workers=12,     # 12个子进程加载数据# for debugging
         pin_memory=True     # 加速GPU训练
     )
 
