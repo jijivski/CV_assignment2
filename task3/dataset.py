@@ -242,10 +242,10 @@ class KITTIDataset(Dataset):
 
         if self.downsample:
             img_l = rescale(
-                img_l, 0.5, mode="reflect", anti_aliasing=True, multichannel=True
+                img_l, 0.5, mode="reflect", anti_aliasing=True, #multichannel=True
             )
             img_r = rescale(
-                img_r, 0.5, mode="reflect", anti_aliasing=True, multichannel=True
+                img_r, 0.5, mode="reflect", anti_aliasing=True, #multichannel=True
             )
 
         # 转换为 PyTorch 张量
