@@ -145,7 +145,7 @@ def main():
         patch_dataset, 
         batch_size=128,      # 每个批次32个样本
         shuffle=True,       # 随机打乱数据
-        num_workers=12,     # 12个子进程加载数据# for debugging
+        num_workers=3,     # 12个子进程加载数据# for debugging
         pin_memory=True     # 加速GPU训练
     )
 
