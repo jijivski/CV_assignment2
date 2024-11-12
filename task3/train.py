@@ -4,7 +4,9 @@ import tqdm
 import numpy as np
 import torch
 import time
-from dataset import KITTIDataset, PatchProvider
+# from dataset import KITTIDataset, PatchProvider
+from dataset import KITTIDataset, PatchDataset
+
 from siamese_neural_network import StereoMatchingNetwork, calculate_similarity_score
 
 
@@ -132,7 +134,8 @@ def main():
         osp.join(data_dir, "training/disp_noc_0"),
     )
     # Load patch provider
-    patches = PatchProvider(dataset, patch_size=(patch_size, patch_size))
+    # patches = PatchProvider(dataset, patch_size=(patch_size, patch_size))
+
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Device: {device}")  
