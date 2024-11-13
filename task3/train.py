@@ -9,9 +9,8 @@ import time
 from dataset import KITTIDataset, PatchDataset
 import wandb
 from siamese_neural_network import StereoMatchingNetwork, calculate_similarity_score
+import argparse
 
-
-wandb.init(project = 'cv2_3')
 
 def hinge_loss(score_pos, score_neg, label, margin=0.2):
     """
@@ -137,7 +136,9 @@ def training_loop(
 
 
 
-def main():
+def main(args):
+    wandb.init(project = 'cv2_3', config=args)
+
     # Fix random seed for reproducibility
     np.random.seed(7)
     torch.manual_seed(7)
@@ -146,7 +147,7 @@ def main():
     training_iterations = 1000
     batch_size = 128
     # learning_rate = 3e-4
-    learning_rate = 3e-4
+    # learning_rate = 6e-4
     patch_size = 9
     padding = patch_size // 2
     max_disparity = 50
@@ -173,7 +174,7 @@ def main():
         patch_dataset, 
         batch_size=batch_size,      # 每个批次32个样本
         shuffle=True,       # 随机打乱数据
-        # num_workers=3,     # 12个子进程加载数据# for debugging
+        num_workers=3,     # 12个子进程加载数据# for debugging
         pin_memory=True     # 加速GPU训练
     )
 
@@ -189,9 +190,19 @@ def main():
 
     # uncomment if you don't have a gpu
     # infer_similarity_metric.to('cpu')
-    optimizer = torch.optim.SGD(
-        infer_similarity_metric.parameters(), lr=learning_rate, momentum=0.9
-    )
+
+    if args.optimizer == 'SGD':
+        optimizer = torch.optim.SGD(
+            infer_similarity_metric.parameters(), lr=args.lr, momentum=0.9
+        )
+    elif args.optimizer == 'Adam':
+        optimizer = torch.optim.Adam(
+            infer_similarity_metric.parameters(), lr=args.lr
+        )
+    elif args.optimizer == 'AdamW':
+        optimizer = torch.optim.AdamW(
+            infer_similarity_metric.parameters(), lr=args.lr, weight_decay=args.weight_decay
+        )
 
     # Start training loop
     training_loop(
@@ -205,11 +216,21 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="Choose an optimizer")
+    parser.add_argument('--optimizer', type=str, default='SGD', 
+                        choices=['SGD', 'Adam', 'AdamW'], 
+                        help='Optimizer to use: SGD, Adam, or AdamW')
+    parser.add_argument('--lr', type=float, default=0.001, help='Learning rate')
+    parser.add_argument('--weight_decay', type=float, default=0.01, help='Weight decay for AdamW')
+    args = parser.parse_args()
+    main(args)
 
 '''
 cd /root/autodl-tmp/MKSC-20-0237-codes-data/data/amazon/CV_assignment2/task3/
-CUDA_VISIBLE_DEVICES="" python train.py
+CUDA_VISIBLE_DEVICES="" python train.py --optimizer SGD
+python train.py --optimizer Adam --lr 0.001
+python train.py --optimizer AdamW --lr 0.001 --weight_decay 0.01
 
-python train.py
+
+python train.py 
 '''
