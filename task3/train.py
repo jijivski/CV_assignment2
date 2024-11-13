@@ -34,7 +34,10 @@ margin, be a positive real number. The hinge loss for that pair of examples is d
 max(0, m + s− − s+). The loss is zero when the similarity of the positive example is greater
 than the similarity of the negative example by at least the margin m. We set the margin
 to 0.2 in our experiments.'''
+
     loss = torch.clamp(margin + score_neg - score_pos, min=0)
+    # breakpoint()
+    print(loss[:10])
     avg_loss = loss.mean()
     # acc = (loss <= 0).float().mean() #TODO
     acc = (score_pos > score_neg).float().sum() / len(score_pos)
@@ -52,7 +55,7 @@ def training_loop(
     optimizer,
     out_dir,
     iterations=1000,
-    batch_size=128,
+    # batch_size=128,
 ):
     """
     Runs the training loop of the siamese network.
@@ -75,10 +78,14 @@ def training_loop(
     print(f"Device: {device}")
     # breakpoint()
 
+    accumulation_steps = 10
+    cnt_batch = 0
     for i in tqdm.tqdm(range(iterations)):
+        cumulative_loss = 0.0
+        cumulative_acc = 0.0
         # left_patches, right_patches, labels = patches.iterate_batches(batch_size)
         # ref_batch, pos_batch, neg_batch = next(patches.iterate_batches(batch_size))
-        for ref_batch, pos_batch, neg_batch in patches:
+        for batch_iter,(ref_batch, pos_batch, neg_batch) in enumerate(patches):
             # breakpoint()
             # device = infer_similarity_metric.device
             ref_batch = ref_batch.to(device)
@@ -86,25 +93,43 @@ def training_loop(
             neg_batch = neg_batch.to(device)
             # breakpoint()
             # pos_batch.shape
-            # [128, 9, 9, 1]
+            # torch.Size([100, 9, 9, 1])
             # want it to be BCHW, it is now BHWC
             ref_batch = ref_batch.permute(0, 3, 1, 2)
             pos_batch = pos_batch.permute(0, 3, 1, 2)
             neg_batch = neg_batch.permute(0, 3, 1, 2)
+            # check the shape, check the names, if reversed
 
 
             optimizer.zero_grad()
             similarity_pos = calculate_similarity_score(infer_similarity_metric, ref_batch, pos_batch)
             similarity_neg = calculate_similarity_score(infer_similarity_metric, ref_batch, neg_batch)
+            print('similarity_pos',similarity_pos[:10])
+            print('similarity_neg',similarity_neg[:10])
+
             loss, acc = hinge_loss(similarity_pos, similarity_neg, label=None)# fill 
+            
+            print(loss, acc)
+            cumulative_loss += loss.item()
+            cumulative_acc += acc.item()
+            cnt_batch+=1
+
             loss.backward()
             optimizer.step()
-            if i % 50 == 0:
-                print(f'Iteration {i}, Loss: {loss.item()}, Accuracy: {acc.item()}')
-                with open(osp.join(out_dir, f"{time_str}_train_losses.txt"), "a") as f:
-                    f.write(f"{i} {loss.item()} {acc.item()}\n")
-                # save model here
-                torch.save(infer_similarity_metric.state_dict(), osp.join(out_dir, f"trained_model_{i}.pth"))
+
+            if batch_iter % accumulation_steps == 0:
+                avg_loss = cumulative_loss / cnt_batch
+                avg_acc = cumulative_acc / cnt_batch
+                print(f'batch_iter {batch_iter + 1}, Average Loss: {avg_loss}, Average Accuracy: {avg_acc}')
+                cnt_batch=0
+                # Reset accumulators
+                cumulative_loss = 0.0
+                cumulative_acc = 0.0
+        if i%50==0 and i>1:
+            with open(osp.join(out_dir, f"{time_str}_train_losses.txt"), "a") as f:
+                f.write(f"{i} {loss.item()} {acc.item()}\n")
+            # save model here
+            torch.save(infer_similarity_metric.state_dict(), osp.join(out_dir, f"trained_model_{i}.pth"))
 
 
 
@@ -116,7 +141,7 @@ def main():
 
     # Hyperparameters
     training_iterations = 1000
-    batch_size = 4
+    batch_size = 128
     # learning_rate = 3e-4
     learning_rate = 1e-3
     patch_size = 9
@@ -143,9 +168,9 @@ def main():
     # 创建数据加载器
     train_loader = DataLoader(
         patch_dataset, 
-        batch_size=128,      # 每个批次32个样本
+        batch_size=batch_size,      # 每个批次32个样本
         shuffle=True,       # 随机打乱数据
-        num_workers=3,     # 12个子进程加载数据# for debugging
+        # num_workers=3,     # 12个子进程加载数据# for debugging
         pin_memory=True     # 加速GPU训练
     )
 
@@ -172,7 +197,7 @@ def main():
         optimizer,
         out_dir,
         iterations=training_iterations,
-        batch_size=batch_size,
+        # batch_size=batch_size,
     )
 
 

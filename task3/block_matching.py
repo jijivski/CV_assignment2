@@ -60,11 +60,13 @@ def sad(image_left, image_right, window_size=3, max_disparity=50):
             # 左图窗口
             window_left = image_left[y-padding:y+padding+1, x-padding:x+padding+1]
             
-            # 搜索右图匹配窗口
+            # 在右图中向左搜索匹配窗口
             for d in range(max_disparity + 1):
-                if x+padding+1+d>image_right.shape[1]:
+                # 确保搜索区域在右图范围内
+                if x - padding - d < 0:
                     break
-                window_right = image_right[y-padding:y+padding+1, x-padding+d:x+padding+1+d]
+                
+                window_right = image_right[y-padding:y+padding+1, x-padding-d:x+padding+1-d]
                 sad_value = np.sum(np.abs(window_left - window_right))
                 
                 if sad_value < min_sad:
@@ -73,12 +75,12 @@ def sad(image_left, image_right, window_size=3, max_disparity=50):
             
             D[y-padding, x-padding] = best_d
 
+    return D
     #######################################
     # -------------------------------------
     # TODO: ENTER CODE HERE (EXERCISE 1)
     # -------------------------------------
 
-    return D
 
 
 def visualize_disparity(
@@ -97,19 +99,20 @@ def visualize_disparity(
     """
     plt.figure(figsize=(12, 6))
     
-    plt.subplot(1, 3, 1)
-    plt.imshow(im_left, cmap='gray')
-    plt.title('Left Image')
-    plt.axis('off')
+    # plt.subplot(1, 3, 1)
+    # plt.imshow(im_left, cmap='gray')
+    # plt.title('Left Image')
+    # plt.axis('off')
 
-    plt.subplot(1, 3, 2)
-    plt.imshow(im_right, cmap='gray')
-    plt.title('Right Image')
-    plt.axis('off')
+    # plt.subplot(1, 3, 2)
+    # plt.imshow(im_right, cmap='gray')
+    # plt.title('Right Image')
+    # plt.axis('off')
 
-    plt.subplot(1, 3, 3)
+    # plt.subplot(1, 3, 3)
     # Normalize the disparity map to [0, 1] range and apply a colormap
-    normalized_disparity = (disparity / max_disparity).astype(np.float32)
+    # normalized_disparity = (disparity / max_disparity).astype(np.float32)
+    normalized_disparity = (disparity).astype(np.float32)
     plt.imshow(normalized_disparity, cmap='jet')
     plt.colorbar(label='Disparity')
     plt.title(title)
