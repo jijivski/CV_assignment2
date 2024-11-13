@@ -7,9 +7,11 @@ import torch
 import time
 # from dataset import KITTIDataset, PatchProvider
 from dataset import KITTIDataset, PatchDataset
-
+import wandb
 from siamese_neural_network import StereoMatchingNetwork, calculate_similarity_score
 
+
+wandb.init(project = 'cv2_3')
 
 def hinge_loss(score_pos, score_neg, label, margin=0.2):
     """
@@ -104,8 +106,8 @@ def training_loop(
             optimizer.zero_grad()
             similarity_pos = calculate_similarity_score(infer_similarity_metric, ref_batch, pos_batch)
             similarity_neg = calculate_similarity_score(infer_similarity_metric, ref_batch, neg_batch)
-            print('similarity_pos',similarity_pos[:10])
-            print('similarity_neg',similarity_neg[:10])
+            # print('similarity_pos',similarity_pos[:10])
+            # print('similarity_neg',similarity_neg[:10])
 
             loss, acc = hinge_loss(similarity_pos, similarity_neg, label=None)# fill 
             
@@ -120,7 +122,8 @@ def training_loop(
             if batch_iter % accumulation_steps == 0:
                 avg_loss = cumulative_loss / cnt_batch
                 avg_acc = cumulative_acc / cnt_batch
-                print(f'batch_iter {batch_iter + 1}, Average Loss: {avg_loss}, Average Accuracy: {avg_acc}')
+                # print(f'batch_iter {batch_iter + 1}, Average Loss: {avg_loss}, Average Accuracy: {avg_acc}')
+                wandb.log({'avg_loss':avg_loss,'avg_acc':avg_acc})
                 cnt_batch=0
                 # Reset accumulators
                 cumulative_loss = 0.0
