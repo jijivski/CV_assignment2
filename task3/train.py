@@ -111,7 +111,7 @@ def training_loop(
 
             loss, acc = hinge_loss(similarity_pos, similarity_neg, label=None)# fill 
             
-            print(loss, acc)
+            # print(loss, acc)
             cumulative_loss += loss.item()
             cumulative_acc += acc.item()
             cnt_batch+=1
@@ -146,7 +146,7 @@ def main():
     training_iterations = 1000
     batch_size = 128
     # learning_rate = 3e-4
-    learning_rate = 6e-4
+    learning_rate = 3e-4
     patch_size = 9
     padding = patch_size // 2
     max_disparity = 50
