@@ -10,3 +10,4 @@ KITTI_2015_subset.zip
 __MACOSX/._KITTI_2015_subset
 task3/output/
 *.pyc
+task3/__MACOSX/

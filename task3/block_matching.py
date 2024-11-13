@@ -45,28 +45,33 @@ def sad(image_left, image_right, window_size=3, max_disparity=50):
         D (np.ndarray): HxW numpy array containing the disparity for each pixel
     """
 
+    height, width = image_left.shape
     D = np.zeros_like(image_left)
-
-    # add zero padding
+    
     padding = window_size // 2
-    image_left = add_padding(image_left, padding).astype(np.float32)
-    image_right = add_padding(image_right, padding).astype(np.float32)
-
-    height = image_left.shape[0]
-    width = image_left.shape[1]
-
-    for x in range(padding, padding + width - window_size + 1):
-        for y in range(padding, padding + height - window_size + 1):
+    image_left = add_padding(image_left, padding)
+    image_right = add_padding(image_right, padding)
+    
+    for y in range(padding, height + padding):
+        for x in range(padding, width + padding):
             min_sad = float('inf')
             best_d = 0
-            window_left = image_left[y - padding:y + padding + window_size, x - padding:x + padding + window_size]
+            
+            # 左图窗口
+            window_left = image_left[y-padding:y+padding+1, x-padding:x+padding+1]
+            
+            # 搜索右图匹配窗口
             for d in range(max_disparity + 1):
-                window_right = image_right[y - padding:y + padding + window_size, x - padding + d:x + padding + window_size + d]
+                if x+padding+1+d>image_right.shape[1]:
+                    break
+                window_right = image_right[y-padding:y+padding+1, x-padding+d:x+padding+1+d]
                 sad_value = np.sum(np.abs(window_left - window_right))
+                
                 if sad_value < min_sad:
                     min_sad = sad_value
                     best_d = d
-            D[y - padding:y + padding + window_size, x - padding:x + padding + window_size] = best_d
+            
+            D[y-padding, x-padding] = best_d
 
     #######################################
     # -------------------------------------
@@ -119,9 +124,9 @@ def visualize_disparity(
     # -------------------------------------
 
 
-def main():
+def main(window_size = 3):
     # Hyperparameters
-    window_size = 3
+    
     max_disparity = 50
 
     # Shortcuts
@@ -158,7 +163,13 @@ def main():
             title=title,
             max_disparity=max_disparity,
         )
+        break
 
 
 if __name__ == "__main__":
-    main()
+    main(window_size=3)
+    main(window_size=7)
+    main(window_size=15)
+
+
+
