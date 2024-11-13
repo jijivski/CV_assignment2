@@ -143,7 +143,7 @@ def main():
     training_iterations = 1000
     batch_size = 128
     # learning_rate = 3e-4
-    learning_rate = 1e-3
+    learning_rate = 6e-4
     patch_size = 9
     padding = patch_size // 2
     max_disparity = 50
