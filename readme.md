@@ -8,8 +8,9 @@ pip list
 conda activate cv-assignment2
 cd /root/autodl-tmp/MKSC-20-0237-codes-data/data/amazon/CV_assignment2/
 cd /home/chenghao/workspace/CV_assignment2/task3
+time python train.py
 python block_matching.py
-CUDA_VISIBLE_DEVICES="0" python task3/train.py
+CUDA_VISIBLE_DEVICES="0" python task3/
 CUDA_VISIBLE_DEVICES="" python task3/train.py
 
 cd /home/chenghao/workspace/CV_assignment2/task3
