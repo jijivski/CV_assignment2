@@ -8,6 +8,10 @@ task3/.DS_Store
 __MACOSX/KITTI_2015_subset/
 KITTI_2015_subset.zip
 __MACOSX/._KITTI_2015_subset
-task3/output/
+task3/output/*/*
+!task3/output/siamese_network/trained_model_750_final.pth
+!task3/output/siamese_network/0_training_iterations_750_block.png
+!task3/output/siamese_network/0_training_iterations_750_block_median_filter.png
+!task3/output/siamese_network/0_training_iterations_750_block_bilateral_filter.png
 *.pyc
 task3/__MACOSX/
