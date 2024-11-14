@@ -186,7 +186,7 @@ def main(filter='median_filter'):
     data_dir = osp.join(root_dir, "KITTI_2015_subset")
     out_dir = osp.join(root_dir, "output/siamese_network")
     # breakpoint()
-    model_path = osp.join(out_dir, f"trained_model_{training_iterations}.pth")
+    model_path = osp.join(out_dir, f"trained_model_{training_iterations}_final.pth")
     print(f'loading {model_path}')
     if not osp.exists(out_dir):
         os.makedirs(out_dir)

@@ -29,11 +29,16 @@ class StereoMatchingNetwork(torch.nn.Module):
         gpu = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
         self.conv1 = torch.nn.Conv2d(1, 64, kernel_size=3)
         self.relu1 = torch.nn.ReLU()
-        self.conv2 = torch.nn.Conv2d(64, 128, kernel_size=3)
+        self.conv2 = torch.nn.Conv2d(64, 64, kernel_size=3)
         self.relu2 = torch.nn.ReLU()
-        self.conv3 = torch.nn.Conv2d(128, 256, kernel_size=3)
+        self.conv3 = torch.nn.Conv2d(64, 64, kernel_size=3)
         self.relu3 = torch.nn.ReLU()
-        self.conv4 = torch.nn.Conv2d(256, 64, kernel_size=3)
+        self.conv4 = torch.nn.Conv2d(64, 64, kernel_size=3)
+        # self.conv2 = torch.nn.Conv2d(64, 128, kernel_size=3)
+        # self.relu2 = torch.nn.ReLU()
+        # self.conv3 = torch.nn.Conv2d(128, 256, kernel_size=3)
+        # self.relu3 = torch.nn.ReLU()
+        # self.conv4 = torch.nn.Conv2d(256, 64, kernel_size=3)
         self.normalize = torch.nn.functional.normalize
 
         #######################################
