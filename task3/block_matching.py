@@ -52,8 +52,8 @@ def sad(image_left, image_right, window_size=3, max_disparity=50):
     image_left = add_padding(image_left, padding)
     image_right = add_padding(image_right, padding)
     
-    for y in range(padding, height + padding, padding):
-        for x in range(padding, width + padding, padding):
+    for y in range(padding, height + padding):
+        for x in range(padding, width + padding):
             min_sad = float('inf')
             best_d = 0
             
@@ -73,18 +73,14 @@ def sad(image_left, image_right, window_size=3, max_disparity=50):
                     min_sad = sad_value
                     best_d = d
             
-            # D[y-padding, x-padding] = best_d
-            for _x in range(padding):
-                for _y in range(padding):
-                    D[y-padding-_y, x-padding-_x] = best_d
+            D[y-padding, x-padding] = best_d
 
-    return D
     #######################################
     # -------------------------------------
     # TODO: ENTER CODE HERE (EXERCISE 1)
     # -------------------------------------
 
-
+    return D
 
 def visualize_disparity(
     disparity, im_left, im_right, out_file_path, title="Disparity Map", max_disparity=50

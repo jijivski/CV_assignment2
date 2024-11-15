@@ -15,5 +15,8 @@ task3/output/*/*
 !task3/output/siamese_network/0_training_iterations_750_block_bilateral_filter.png
 !task3/output/siamese_network/trained_model_950_final.pth
 !task3/output/siamese_network/0_training_iterations_750.png
+!task3/output/handcrafted_stereo_pixel/*
+!task3/output/handcrafted_stereo_block/*
+
 *.pyc
 task3/__MACOSX/
