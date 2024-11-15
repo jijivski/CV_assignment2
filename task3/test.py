@@ -34,46 +34,8 @@ def compute_disparity_CNN(infer_similarity_metric, img_l, img_r, max_disparity=5
     # img_r = add_padding(img_r, padding)
     
     # pixel matching
-    for y in tqdm.tqdm(range(padding, height + padding)):
-        for x in tqdm.tqdm(range(padding, width + padding)):
-            max_similarity = -float('inf')
-            best_d = 0
-            
-            # 左图窗口
-            # should have [128, 1, 9, 9]
-            # but have 9,9,1
-            # breakpoint()
-            window_left = img_l[y-padding:y+padding+1, x-padding:x+padding+1]
-            # Step 1: Permute to change the shape to [1, 9, 9]
-            window_left = window_left.permute(2, 0, 1)  # This changes [9, 9, 1] to [1, 9, 9]
-            # Step 2: Unsqueeze to add batch dimension [1, 1, 9, 9]
-            window_left = window_left.unsqueeze(0)  # This adds a batch dimension, resulting in [1, 1, 9, 9]
-
-            # 在右图中向左搜索匹配窗口
-            for d in range(max_disparity + 1):
-                # 确保搜索区域在右图范围内
-                if x - padding - d < 0:
-                    break
-                
-                window_right = img_r[y-padding:y+padding+1, x-padding-d:x+padding+1-d]
-                # Step 1: Permute to change the shape to [1, 9, 9]
-                window_right = window_right.permute(2, 0, 1)  # This changes [9, 9, 1] to [1, 9, 9]
-                # Step 2: Unsqueeze to add batch dimension [1, 1, 9, 9]
-                window_right = window_right.unsqueeze(0)  # This adds a batch dimension, resulting in [1, 1, 9, 9]
-
-                # sad_value = np.sum(np.abs(window_left - window_right))
-                similarity_value = calculate_similarity_score(infer_similarity_metric,window_left,window_right)
-                
-                if similarity_value > max_similarity:
-                    max_similarity = similarity_value
-                    best_d = d
-            
-            D[y-padding, x-padding] = best_d
-
-
-    ## block calc D
-    # for y in tqdm.tqdm(range(2*padding, height + padding, padding)):
-    #     for x in tqdm.tqdm(range(2*padding, width + padding, padding)):
+    # for y in tqdm.tqdm(range(padding, height + padding)):
+    #     for x in tqdm.tqdm(range(padding, width + padding)):
     #         max_similarity = -float('inf')
     #         best_d = 0
             
@@ -106,11 +68,50 @@ def compute_disparity_CNN(infer_similarity_metric, img_l, img_r, max_disparity=5
     #                 max_similarity = similarity_value
     #                 best_d = d
             
-    #         for _x in range(padding):
-    #             for _y in range(padding):
-    #                 D[y-padding-_y, x-padding-_x] = best_d
-
+    #         D[y-padding, x-padding] = best_d
     # return D
+        
+
+
+    ## block calc D
+    for y in tqdm.tqdm(range(2*padding, height + padding, padding)):
+        for x in tqdm.tqdm(range(2*padding, width + padding, padding)):
+            max_similarity = -float('inf')
+            best_d = 0
+            
+            # 左图窗口
+            # should have [128, 1, 9, 9]
+            # but have 9,9,1
+            # breakpoint()
+            window_left = img_l[y-padding:y+padding+1, x-padding:x+padding+1]
+            # Step 1: Permute to change the shape to [1, 9, 9]
+            window_left = window_left.permute(2, 0, 1)  # This changes [9, 9, 1] to [1, 9, 9]
+            # Step 2: Unsqueeze to add batch dimension [1, 1, 9, 9]
+            window_left = window_left.unsqueeze(0)  # This adds a batch dimension, resulting in [1, 1, 9, 9]
+
+            # 在右图中向左搜索匹配窗口
+            for d in range(max_disparity + 1):
+                # 确保搜索区域在右图范围内
+                if x - padding - d < 0:
+                    break
+                
+                window_right = img_r[y-padding:y+padding+1, x-padding-d:x+padding+1-d]
+                # Step 1: Permute to change the shape to [1, 9, 9]
+                window_right = window_right.permute(2, 0, 1)  # This changes [9, 9, 1] to [1, 9, 9]
+                # Step 2: Unsqueeze to add batch dimension [1, 1, 9, 9]
+                window_right = window_right.unsqueeze(0)  # This adds a batch dimension, resulting in [1, 1, 9, 9]
+
+                # sad_value = np.sum(np.abs(window_left - window_right))
+                similarity_value = calculate_similarity_score(infer_similarity_metric,window_left,window_right)
+                
+                if similarity_value > max_similarity:
+                    max_similarity = similarity_value
+                    best_d = d
+            
+            for _x in range(padding):
+                for _y in range(padding):
+                    D[y-padding-_y, x-padding-_x] = best_d
+    return D
 
     #######################################
     # -------------------------------------
@@ -174,7 +175,7 @@ def bilateral_filter(disparity_map, spatial_sigma=3, intensity_sigma=0.1):
 
 def main(filter='median_filter'):
     # Hyperparameters
-    training_iterations = 750 
+    training_iterations = 950 
     batch_size = 128
     learning_rate = 3e-4
     patch_size = 9
@@ -204,6 +205,10 @@ def main(filter='median_filter'):
         print(f"Processing {i} image")
         # Load images and add padding
         img_left, img_right = dataset[i]
+        
+        # img_left=img_left[:,:20,:20]
+        # img_right=img_right[:,:20,:20]
+
         img_left_padded, img_right_padded = add_padding(img_left, padding), add_padding(
             img_right, padding
         )
@@ -227,26 +232,32 @@ def main(filter='median_filter'):
         out_file_path = osp.join(out_dir, file_name)
         
         
-        if filter=='median_filter':
-            disparity_map = median_filter(disparity_map, kernel_size=3)
-        if filter=='bilateral_filter':
-            disparity_map = bilateral_filter(disparity_map, spatial_sigma=3, intensity_sigma=0.1)
-        
-        
-        visualize_disparity(
-            disparity_map.squeeze(),
-            img_left.squeeze(),
-            img_right.squeeze(),
-            out_file_path,
-            title,
-            max_disparity=max_disparity,
-        )
-        break
+        if 'median_filter' in filter:
+            _disparity_map = median_filter(disparity_map, kernel_size=3)
+            visualize_disparity(
+                _disparity_map.squeeze(),
+                img_left.squeeze(),
+                img_right.squeeze(),
+                out_file_path,
+                title,
+                max_disparity=max_disparity,
+            )
+
+        if 'bilateral_filter' in filter:
+            _disparity_map = bilateral_filter(disparity_map, spatial_sigma=3, intensity_sigma=0.1)
+            visualize_disparity(
+                _disparity_map.squeeze(),
+                img_left.squeeze(),
+                img_right.squeeze(),
+                out_file_path,
+                title,
+                max_disparity=max_disparity,
+            )
+            break
 
 
 if __name__ == "__main__":
-    main(filter='median_filter')
-    main(filter='bilateral_filter')
+    main(filter=['median_filter','bilateral_filter'])
 '''
 cd /root/autodl-tmp/MKSC-20-0237-codes-data/data/amazon/CV_assignment2/task3/
 cd /home/chenghao/workspace/CV_assignment2/task3/
